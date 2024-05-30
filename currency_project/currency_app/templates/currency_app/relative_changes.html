@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Изменения курса валют</title>
+    <script type="text/javascript">
+        function resetForm() {
+            var form = document.getElementById("relative-change-form");
+            form.reset();
+            var checkboxes = form.querySelectorAll("input[type=checkbox]");
+            checkboxes.forEach(function(checkbox) {
+                checkbox.checked = false;
+            });
+        }
+    </script>
+</head>
+<body>
+    <h1>Изменения курса валют относительно отчётной даты ({{ date }})</h1>
+    <form id="relative-change-form" method="post" action="">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Применить</button>
+        <button type="button" onclick="resetForm()">Очистить</button>
+    </form>
+    <a href="{% url 'index' %}">Назад</a>
+    {% if graphic %}
+        <h2>График:</h2>
+        <img src="data:image/png;base64,{{ graphic }}" alt="Graph">
+    {% endif %}
+</body>
+</html>

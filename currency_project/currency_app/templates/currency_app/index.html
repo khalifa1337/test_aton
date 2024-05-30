@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Данные курсов валют</title>
+</head>
+<body>
+    <h1>Данные курсов валют</h1>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Загрузить данные</button>
+    </form>
+    <br>
+    <a href="{% url 'relative_changes' %}"> Просмотр изменения курса валют</a>
+</body>
+</html>
