@@ -14,6 +14,44 @@ from .models import (
 import matplotlib.pyplot as plt  # type:ignore
 import io
 import base64
+import os
+from django.conf import settings
+
+
+class CurrencyTuple:
+    """Для получения всех стран, валюты для которых у нас имеются"""
+
+    def __init__(self):
+        self.currency_tuples = []
+
+    @staticmethod
+    def check_sqlite_db_exists():
+        db_path = settings.DATABASES['default']['NAME']
+        return os.path.exists(db_path)
+
+    def load_currency_data(self):
+        # Выполнение запроса к базе данных только при вызове этого метода
+        currency_data = CountryCurrency.objects.raw(
+            'SELECT DISTINCT '
+            'cac.id, cac.country, cac.currency_code, cac.currency_name '
+            'from currency_app_countrycurrency cac '
+            'join currency_app_currencyrate cac2 '
+            'on cac.currency_code = cac2.currency '
+            'order by cac.currency_name'
+        )
+        for data in currency_data:
+            self.currency_tuples.append((
+                data.currency_code, 
+                f'{data.country} ({data.currency_name} | {data.currency_code})'
+            ))
+        return self.currency_tuples
+
+    @property
+    def CURRENCY_CODES(self):
+        if not self.currency_tuples and self.check_sqlite_db_exists():
+            self.load_currency_data()
+        return self.currency_tuples
+
 
 
 def index(request):
@@ -58,9 +96,12 @@ def index(request):
 
 
 def relative_changes_view(request):
+    currency_tuple = CurrencyTuple()
+    currency_codes = currency_tuple.CURRENCY_CODES
+    
     # Метод для страницы с построением относительного графика.
     if request.method == 'POST':
-        form = RelativeChangeForm(request.POST)
+        form = RelativeChangeForm(request.POST, currency_codes=currency_codes)
         if form.is_valid():
             start_date = form.cleaned_data['start_date']
             end_date = form.cleaned_data['end_date']
@@ -106,8 +147,12 @@ def relative_changes_view(request):
                 'graphic': graphic
             })
     else:
-        form = RelativeChangeForm()
-    relative_date = SyncParameter.objects.get().param_value
+        form = RelativeChangeForm(currency_codes=currency_codes)
+    try:
+        relative_date = SyncParameter.objects.get().param_value
+    except:
+        relative_date = 'В базе данных нет записей'
+
     return render(
         request,
         'currency_app/relative_changes.html',

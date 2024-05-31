@@ -4,23 +4,6 @@ from django import forms
 from django.core.exceptions import ValidationError
 
 
-class CurrencyTuple:
-    """Для получения всех стран, валюты для которых у нас имеются"""
-    currency_tuples: list = []
-    currency_data = CountryCurrency.objects.raw(
-        'SELECT DISTINCT '
-        'cac.id, cac.country, cac.currency_code, cac.currency_name '
-        'from currency_app_countrycurrency cac '
-        'join currency_app_currencyrate cac2 '
-        'on cac.currency_code = cac2.currency '
-        'order by cac.currency_name')
-    for data in currency_data:
-        currency_tuples.append((
-            data.currency_code, 
-            f'{data.country} ({data.currency_name} | {data.currency_code})')
-            )
-    CURRENCY_CODES = currency_tuples
-
 
 class DateRangeForm(forms.Form):
     """
@@ -66,10 +49,10 @@ class RelativeChangeForm(forms.Form):
     Форма для страницы relative_changes- выбор дат.
     Согласно условию, возможный диапазон не более 2 лет.
     """
+    
     current_year = date.today().year
     current_date = datetime.now()
     years_range = range(current_year - 10, current_year + 1)
-
     start_date = forms.DateField(
         widget=forms.SelectDateWidget(years=years_range),
         initial=current_date - timedelta(days=730),
@@ -83,11 +66,17 @@ class RelativeChangeForm(forms.Form):
     )
 
     currency = forms.MultipleChoiceField(
-        choices=CurrencyTuple.CURRENCY_CODES,
+        # choices=currency_codes,
         widget=forms.CheckboxSelectMultiple,
         label='Выбор стран:',
         error_messages={'required': 'Необходимо выбрать страну'}
     )
+
+    def __init__(self, *args, **kwargs):
+        currency_codes = kwargs.pop('currency_codes', [])
+        super(RelativeChangeForm, self).__init__(*args, **kwargs)
+        self.fields['currency'].choices = currency_codes
+
 
     def clean(self):
         """
