@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html>
+    {% load static %}
 <head>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
     <title>Изменения курса валют</title>
     <script type="text/javascript">
         function resetForm() {
@@ -14,17 +16,25 @@
     </script>
 </head>
 <body>
+    <div class="title">
     <h1>Изменения курса валют относительно отчётной даты ({{ date }})</h1>
-    <form id="relative-change-form" method="post" action="">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Применить</button>
-        <button type="button" onclick="resetForm()">Очистить</button>
-    </form>
-    <a href="{% url 'index' %}">Назад</a>
-    {% if graphic %}
-        <h2>График:</h2>
-        <img src="data:image/png;base64,{{ graphic }}" alt="Graph">
-    {% endif %}
+    </div>
+    <div class="content">
+        <form id="relative-change-form" method="post" action="">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit">Применить</button>
+            <button type="button" onclick="resetForm()">Очистить</button>
+        </form>
+    </div>
+    <div class="content">
+        <a href="{% url 'index' %}">Назад</a>
+    </div>
+    <div class="content">
+        {% if graphic %}
+
+            <img src="data:image/png;base64,{{ graphic }}" alt="Graph">
+        {% endif %}
+    </div>
 </body>
 </html>

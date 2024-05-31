@@ -1,9 +1,9 @@
 from django.shortcuts import render  # type:ignore
 from .forms import DateRangeForm, RelativeChangeForm
 from .utils import (
-    fetch_currency_rates,
-    fetch_country_currencies,
-    calculate_relative_changes
+    CurrencyFetcher,
+    CountryCurrencyFetcher,
+    RelativeChangeCalculator
     )
 from .models import (
     CurrencyRate,
@@ -75,8 +75,12 @@ def index(request):
                 and date_to_sync.day <= 10
             ):
                 date_to_sync = date_to_sync.replace(day=11)
-            currency_data = fetch_currency_rates(start_date, end_date)
-            country_data = fetch_country_currencies()
+            currency_fetcher = CurrencyFetcher(start_date, end_date)
+            currency_data = currency_fetcher.fetch_currency_rates()
+            # currency_data = fetch_currency_rates(start_date, end_date)
+            country_currency_fetcher = CountryCurrencyFetcher()
+            # country_data = fetch_country_currencies()
+            country_data = country_currency_fetcher.fetch_country_currencies()
             CurrencyRate.synchronize_currency_rates(currency_data)
             CountryCurrency.synchronize_country_currencies(country_data)
 
@@ -84,9 +88,10 @@ def index(request):
             SyncParameter.objects.update_or_create(
                 param_name='base_date', defaults={'param_value': start_date}
             )
-
+            relative_change_calculator = RelativeChangeCalculator(date_to_sync)
+            relative_changes = relative_change_calculator.calculate_relative_changes()
             # Расчет относительных изменений и синхронизация
-            relative_changes = calculate_relative_changes(date_to_sync)
+            # relative_changes = calculate_relative_changes(date_to_sync)
             RelativeChange.synchronize_relative_changes(relative_changes)
 
             return render(request, 'currency_app/success.html')
@@ -98,7 +103,6 @@ def index(request):
 def relative_changes_view(request):
     currency_tuple = CurrencyTuple()
     currency_codes = currency_tuple.CURRENCY_CODES
-    
     # Метод для страницы с построением относительного графика.
     if request.method == 'POST':
         form = RelativeChangeForm(request.POST, currency_codes=currency_codes)
@@ -131,7 +135,7 @@ def relative_changes_view(request):
 
             plt.xlabel('Дата')
             plt.ylabel('Относительное изменение(%)')
-            plt.title('Относительное изменение курса валют')
+            plt.title('Относительное изменение курса валют, %')
             plt.legend()
             plt.grid(True)
             buffer = io.BytesIO()
